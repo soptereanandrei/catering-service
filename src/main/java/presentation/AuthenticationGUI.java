@@ -11,6 +11,8 @@ public class AuthenticationGUI extends JFrame {
     public JButton getLoginButton() {
         return loginButton;
     }
+    public String getUsername() { return username.getText(); }
+    public String getPassword() { return new String(password.getPassword()); }
 
     private final Dimension frameSize = new Dimension(500, 500);
 

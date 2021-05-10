@@ -1,6 +1,6 @@
 package presentation;
 
-import businessLayer.Logger;
+import businessLayer.LoggerAdministrator;
 ;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -20,7 +20,7 @@ public class Controller {
         public void actionPerformed(ActionEvent e) {
             AdministratorGUI administratorGUI = new AdministratorGUI();
             AuthenticationGUI authenticationGUI = new AuthenticationGUI();
-            authenticationGUI.getLoginButton().addActionListener(new Logger());
+            authenticationGUI.getLoginButton().addActionListener(new LoggerAdministrator(administratorGUI, authenticationGUI));
         }
     }
 }
