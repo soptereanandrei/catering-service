@@ -41,4 +41,16 @@ public class GUIUtils {
         return rowPanel;
     }
 
+    public static <T> JComboBox<T> createJComboBox(Dimension d, boolean editable)
+    {
+        JComboBox<T> comboBox = new JComboBox<>();
+        if (d != null) {
+            comboBox.setPreferredSize(d);
+            comboBox.setMaximumSize(d);
+        }
+        comboBox.setEditable(editable);
+
+        return comboBox;
+    }
+
 }

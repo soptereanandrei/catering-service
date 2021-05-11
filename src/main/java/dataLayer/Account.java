@@ -1,11 +1,13 @@
 package dataLayer;
 
+import java.io.Serial;
 import java.io.Serializable;
 
 /**
  * Class wrap an account
  */
 public class Account implements Serializable {
+    @Serial
     private static final long serialVersionUID = 6529685098267757690L;
     private String username;
     private String password;
