@@ -26,7 +26,7 @@ public abstract class Logger implements ActionListener {
         try {
             Serializer serializer = new Serializer();
 
-            List<Object> accounts = serializer.load("Accounts.ser");
+            List<Object> accounts = serializer.loadObjects("Accounts.ser");
 
             Account loginAccount = createAccountObject(authenticationGUI.getUsername(), authenticationGUI.getPassword());
             Account existingAccount;

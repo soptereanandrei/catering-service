@@ -1,31 +1,47 @@
 package presentation;
 
+import businessLayer.MenuItem;
+
 import javax.swing.*;
-import javax.swing.table.DefaultTableModel;
-import javax.swing.table.TableModel;
 import java.awt.*;
+import java.util.HashSet;
 
 public class AdministratorGUI extends JFrame {
 
-    private JButton importButton;
+    public JButton getAddProductButton() {
+        return addProductButton;
+    }
+
+    public JButton getModifyProductButton() {
+        return modifyProductButton;
+    }
+
+    public JButton getDeleteProductButton() {
+        return deleteProductButton;
+    }
+
+    public JButton getCreateNewCompositedProductButton() {
+        return createNewCompositedProductButton;
+    }
+
+    public JButton getImportButton() {
+        return importButton;
+    }
+
+    public JButton getGenerateReportsButton() {
+        return generateReportsButton;
+    }
+
     private JButton addProductButton;
     private JButton modifyProductButton;
     private JButton deleteProductButton;
     private JButton createNewCompositedProductButton;
+    private JButton importButton;
     private JButton generateReportsButton;
 
-    private JComboBox<String> title;
-    private JComboBox<Float> rating;
-    private JComboBox<Float> calories;
-    private JComboBox<Float> protein;
-    private JComboBox<Float> fat;
-    private JComboBox<Float> sodium;
-    private JComboBox<Float> price;
-    private JButton findButton;
+    private ProductsPanel productsPanel;
 
-    private JTable productsTabel;
-
-    public AdministratorGUI()
+    public AdministratorGUI(HashSet<MenuItem> menuItems)
     {
         JPanel content = new JPanel();
         Dimension panelDim = new Dimension(1000, 600);
@@ -34,14 +50,12 @@ public class AdministratorGUI extends JFrame {
 
         content.add(createButtonsPanel());
         content.add(Box.createRigidArea(new Dimension(0, 40)));
-        content.add(createInputPanel());
-        content.add(createTablePanel());
+        content.add(productsPanel = new ProductsPanel(menuItems, panelDim));
 
         add(content);
         setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
-        setSize(panelDim);
-        setLocation(500, 500);
-
+        setSize(panelDim.width + 20, panelDim.height);
+        setLocation(500, 300);
     }
 
     private JPanel createButtonsPanel()
@@ -69,45 +83,8 @@ public class AdministratorGUI extends JFrame {
         return buttonsPanel;
     }
 
-    private JPanel createInputPanel()
+    public void updateTable()
     {
-        JPanel inputPanel = new JPanel();
-        Dimension panelDim = new Dimension(1000, 50);
-        inputPanel.setMaximumSize(panelDim);
-        inputPanel.setLayout(new GridLayout(2, 8));
-
-        String[] labelName = new String[] { "Title", "Rating", "Calories", "Protein", "Fat", "Sodium", "Price", "" };
-        for (String s : labelName)
-            inputPanel.add(new JLabel(s));
-
-        inputPanel.add(title = GUIUtils.createJComboBox(null, true));
-        inputPanel.add(rating = GUIUtils.createJComboBox(null, true));
-        inputPanel.add(calories = GUIUtils.createJComboBox(null, true));
-        inputPanel.add(protein = GUIUtils.createJComboBox(null, true));
-        inputPanel.add(fat = GUIUtils.createJComboBox(null, true));
-        inputPanel.add(sodium = GUIUtils.createJComboBox(null, true));
-        inputPanel.add(price = GUIUtils.createJComboBox(null, true));
-        findButton = new JButton("Find");
-        inputPanel.add(findButton);
-
-        return inputPanel;
-    }
-
-    private JPanel createTablePanel()
-    {
-        JPanel tablePanel = new JPanel();
-        tablePanel.setPreferredSize(new Dimension(1000, 500));
-
-        DefaultTableModel tableModel = new DefaultTableModel();
-        String[] headerNames = new String[] { "Title", "Rating", "Calories", "Protein", "Fat", "Sodium", "Price", "Selected" };
-        for (String s : headerNames)
-            tableModel.addColumn(s);
-
-        productsTabel = new JTable();
-        productsTabel.setModel(tableModel);
-
-        tablePanel.add(new JScrollPane(productsTabel));
-
-        return tablePanel;
+        productsPanel.updateMenu();
     }
 }

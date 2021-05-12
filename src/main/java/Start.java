@@ -1,9 +1,8 @@
-import dataLayer.Account;
+import businessLayer.DeliveryService;
 import dataLayer.Serializer;
 import presentation.Controller;
 import presentation.StartGUI;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class Start {
@@ -16,7 +15,7 @@ public class Start {
 //        objects.add(admin1);
 //        objects.add(admin2);
 //        serializer.writeObjects(objects, "Accounts.ser");
-        List<Object> read = serializer.load("Accounts.ser");
+        List<Object> read = serializer.loadObjects("Accounts.ser");
         for (Object r : read)
             System.out.println(r);
 
