@@ -11,7 +11,7 @@ import java.nio.file.Paths;
 
 public class Controller {
     private DeliveryService deliveryService;
-    //private StartGUI startGUI;
+    private AdministratorGUI administratorGUI = null;
 
     public Controller(StartGUI startGUI)
     {
@@ -30,26 +30,35 @@ public class Controller {
 
         @Override
         public void actionPerformed(ActionEvent e) {
-            AdministratorGUI administratorGUI = new AdministratorGUI(deliveryService.getMenu());
-            administratorGUI.getImportButton().addActionListener(new ImportButtonListener(administratorGUI));
+            if (administratorGUI != null)
+                administratorGUI.dispose();
+
+            administratorGUI = new AdministratorGUI(deliveryService.getMenu());
+            administratorGUI.getImportButton().addActionListener(new ImportButtonListener());
+            administratorGUI.getAddProductButton().addActionListener(new AddProductButtonListener());
 
             AuthenticationGUI authenticationGUI = new AuthenticationGUI();
             authenticationGUI.getLoginButton().addActionListener(new LoggerAdministrator(administratorGUI, authenticationGUI));
         }
     }
 
-    public class ImportButtonListener implements ActionListener {
-
-        private final AdministratorGUI administratorGUI;
-
-        public ImportButtonListener(AdministratorGUI administratorGUI)
-        {
-            this.administratorGUI = administratorGUI;
+    public class AddProductButtonListener implements ActionListener
+    {
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            Object[] fields = administratorGUI.getInputFields();
+            deliveryService.addProduct(fields);
+            administratorGUI.updateMenu(deliveryService.getMenu());
         }
+    }
+
+    public class ImportButtonListener implements ActionListener
+    {
         @Override
         public void actionPerformed(ActionEvent e) {
             deliveryService.importProducts();
-            administratorGUI.updateTable();
+            administratorGUI.updateMenu(deliveryService.getMenu());
         }
     }
+
 }

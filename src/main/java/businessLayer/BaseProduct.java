@@ -8,4 +8,9 @@ public class BaseProduct extends MenuItem {
     {
         super(fields);
     }
+
+    public BaseProduct(Object[] fields)
+    {
+        super(fields);
+    }
 }

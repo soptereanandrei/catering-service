@@ -5,6 +5,7 @@ import businessLayer.MenuItem;
 import javax.swing.*;
 import java.awt.*;
 import java.util.HashSet;
+import java.util.List;
 
 public class AdministratorGUI extends JFrame {
 
@@ -83,8 +84,19 @@ public class AdministratorGUI extends JFrame {
         return buttonsPanel;
     }
 
-    public void updateTable()
+    public void updateMenu(HashSet<MenuItem> newMenu)
     {
-        productsPanel.updateMenu();
+        productsPanel.updateMenu(newMenu);
+    }
+
+    public Object[] getInputFields()
+    {
+        return productsPanel.getInputFields();
+    }
+
+    public List<MenuItem> getSelectedItems(){
+        System.out.println("Selected items are:");
+        productsPanel.getSelectedItems().forEach(System.out::println);
+        return null;
     }
 }

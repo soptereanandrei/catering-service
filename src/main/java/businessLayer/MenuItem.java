@@ -1,10 +1,13 @@
 package businessLayer;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Objects;
 
 public abstract class MenuItem implements Serializable {
+    @Serial
+    private static final long serialVersionUID = 6529685098263257609L;
     private final String title;
     private final float rating;
     private final int calories;
@@ -50,6 +53,17 @@ public abstract class MenuItem implements Serializable {
         fat = Integer.parseInt(fields.get(4));
         sodium = Integer.parseInt(fields.get(5));
         price = Integer.parseInt(fields.get(6));
+    }
+
+    public MenuItem(Object[] fields)
+    {
+        title = (String)fields[0];
+        rating = (Float)fields[1];
+        calories = (int)fields[2];
+        proteins = (int)fields[3];
+        fat = (int)fields[4];
+        sodium = (int)fields[5];
+        price = (int)fields[6];
     }
 
     @Override
