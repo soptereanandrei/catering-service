@@ -3,6 +3,8 @@ package businessLayer;
 import dataLayer.Serializer;
 import presentation.MessageBox;
 
+import java.beans.PropertyChangeListener;
+import java.beans.PropertyChangeSupport;
 import java.io.BufferedReader;
 import java.io.Serial;
 import java.io.Serializable;
@@ -12,17 +14,19 @@ import java.nio.file.Paths;
 import java.util.*;
 
 public class DeliveryService implements IDeliveryServiceProcessing, Serializable {
+    @Serial
+    private static final long serialVersionUID = 6529685098263257690L;
+    private transient PropertyChangeSupport support;
 
     public HashSet<MenuItem> getMenu() {
         return menu;
     }
-    @Serial
-    private static final long serialVersionUID = 6529685098263257690L;
     private HashSet<MenuItem> menu;
 
     public DeliveryService()
     {
         menu = new HashSet<>(0);
+        support = new PropertyChangeSupport(this);
     }
 
     @Override
@@ -65,21 +69,19 @@ public class DeliveryService implements IDeliveryServiceProcessing, Serializable
     }
 
     @Override
-    public void addProduct(Object[] fields) {
+    public void addProduct(MenuItem item) {
 
         try {
-            assert fields[0] != null && fields[1] != null && fields[2] != null && fields[3] != null && fields[4] != null && fields[5] != null && fields[6] != null;
+            assert item != null;
             int preSize = menu.size();
 
-            MenuItem newItem = null;
-            newItem = new BaseProduct(fields);
-
-            menu.add(newItem);
+            menu.add(item);
+            support.firePropertyChange("menu", null, item);
             Serializer serializer = new Serializer();
             serializer.writeObject(this, "DeliveryService.ser");
 
             assert menu.size() == preSize + 1;
-            assert menu.contains(newItem);
+            assert menu.contains(item);
         }
         catch (Exception e)
         {
@@ -92,16 +94,22 @@ public class DeliveryService implements IDeliveryServiceProcessing, Serializable
     }
 
     @Override
-    public void modifyProduct(Object[] fields, List<MenuItem> selectedItems) {
+    public void modifyProduct(List<MenuItem> selectedItems, Object[] fields) {
         assert fields != null && selectedItems != null;
+        int preSize = menu.size();
         try {
             if (selectedItems.size() > 0)
             {
-                List<MenuItem> newItems = new ArrayList<>();
                 for (MenuItem selectedItem : selectedItems)
                 {
-
+                    MenuItem modifiedItem = selectedItem.modifyItem(fields);
+                    menu.remove(selectedItem);
+                    menu.add(modifiedItem);
+                    support.firePropertyChange("menu", selectedItem, modifiedItem);
                 }
+
+                Serializer serializer = new Serializer();
+                serializer.writeObject(this, "DeliveryService.ser");
             }
             else
                 new MessageBox("You have to select which items want to modify");
@@ -110,11 +118,26 @@ public class DeliveryService implements IDeliveryServiceProcessing, Serializable
         {
             new MessageBox(e.getMessage());
         }
+
+        assert menu.size() == preSize;
     }
 
     @Override
-    public void removeProduct() {
+    public void removeProduct(List<MenuItem> selectedItems) {
+        assert selectedItems != null;
+        int preSize = menu.size();
 
+        for (MenuItem selectedItem : selectedItems) {
+            menu.remove(selectedItem);
+            support.firePropertyChange("menu", selectedItem, null);
+        }
+
+        Serializer serializer = new Serializer();
+        serializer.writeObject(this, "DeliveryService.ser");
+
+        for (MenuItem selectedItem : selectedItems)
+            assert !menu.contains(selectedItem);
+        assert menu.size() == preSize - selectedItems.size();
     }
 
     @Override
@@ -127,18 +150,19 @@ public class DeliveryService implements IDeliveryServiceProcessing, Serializable
 
     }
 
-    @Override
-    public void searchProduct() {
-
+    public void createNewPropertyChangeSupport()
+    {
+        support = new PropertyChangeSupport(this);
     }
 
-//    public void test(){
-//        Object[] arr = getMenu();
-//        int nr = 0;
-//        for (Object o : arr) {
-//            System.out.println(o);
-//            nr++;
-//        }
-//        System.out.println("count" + nr);
-//    }
+    public void addPropertyChangeListener(PropertyChangeListener pcl)
+    {
+        support.addPropertyChangeListener(pcl);
+    }
+
+    public void removePropertyChangeListener(PropertyChangeListener pcl)
+    {
+        support.removePropertyChangeListener(pcl);
+    }
+
 }

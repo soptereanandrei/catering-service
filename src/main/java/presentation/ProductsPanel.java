@@ -3,19 +3,17 @@ package presentation;
 import businessLayer.MenuItem;
 
 import javax.swing.*;
-import javax.swing.event.TableModelEvent;
-import javax.swing.event.TableModelListener;
-import javax.swing.table.DefaultTableModel;
-import javax.swing.table.TableColumn;
 import java.awt.*;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.util.*;
 import java.util.List;
-import java.util.function.Predicate;
+import java.util.function.*;
 import java.util.stream.Collectors;
 
-public class ProductsPanel extends JPanel {
+public class ProductsPanel extends JPanel implements PropertyChangeListener {
 
-    private HashMap<MenuItem, Boolean> menu;//Key = MenuItem, Value = unselected/selected
+    private HashMap<MenuItem, ProductPanel> menuMap;
 
     private JComboBox<String> title;
     private JComboBox<Float> rating;
@@ -26,31 +24,28 @@ public class ProductsPanel extends JPanel {
     private JComboBox<Integer> price;
     private JButton findButton;
     private JButton unselectButton;
+    //private JScrollPane allMenuBackup;
 
-    private List<MenuItem> visibleItems;//references to objects visible now in table
+
     private List<MenuItem> selectedItems = new ArrayList<>();//list of objects selected
     public List<MenuItem> getSelectedItems() {
         return selectedItems;
     }
+    public void clearSelection()
+    {
+        selectedItems.clear();
+        System.out.println("Clear all selected items.");
+    }
 
-    private JTable productsTable;
-    private TableModelListener tableModelListener;
-
-    public ProductsPanel(HashSet<MenuItem> menu, Dimension panelDim)
+    public ProductsPanel(HashSet<MenuItem> menu)
     {
         super();
 
-        setPreferredSize(panelDim);
+        createMenuMap(menu);
+
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
 
         add(createInputPanel());
-        add(createTablePanel());
-
-        this.menu = new HashMap<>();
-        menu.forEach(item -> {
-            this.menu.put(item, Boolean.FALSE);
-        });
-
         showNoFilterItems();
 
         findButton.addActionListener(e -> {
@@ -58,26 +53,42 @@ public class ProductsPanel extends JPanel {
         });
 
         unselectButton.addActionListener(e -> {
-            productsTable.getModel().removeTableModelListener(tableModelListener);
-            selectedItems.forEach(item -> this.menu.replace(item, false));
+            selectedItems.forEach(item -> menuMap.get(item).forceUnselect());
             selectedItems.clear();
-            updateVisibleItems();
-            productsTable.getModel().addTableModelListener(tableModelListener);
+            System.out.println("Clear all selected items.");
         });
     }
 
-    public void updateMenu(HashSet<MenuItem> newMenu)
+    public void reinitializationMenu(HashSet<MenuItem> menu)
     {
-        menu = new HashMap<>();
-        newMenu.stream().forEach(item -> menu.put(item, false));
+        createMenuMap(menu);
         showNoFilterItems();
+    }
+
+    @Override
+    public void propertyChange(PropertyChangeEvent evt) {
+        MenuItem oldValue = (MenuItem)evt.getOldValue();
+        MenuItem newValue = (MenuItem)evt.getNewValue();
+
+        if (oldValue == null)//add new product
+        {
+            menuMap.put(newValue, new ProductPanel(newValue, this));
+        }
+        else if (newValue == null)//remove product
+        {
+            menuMap.remove(oldValue);
+        }
+        else {//replace product
+            menuMap.remove(oldValue);
+            menuMap.put(newValue, new ProductPanel(newValue, this));
+        }
     }
 
     public Object[] getInputFields()
     {
         try {
             return new Object[]{
-                    title.getSelectedItem(),
+                    title.getSelectedItem() != null && !((String) title.getSelectedItem()).isBlank() ? title.getSelectedItem() : null,
                     rating.getSelectedItem() != null && !((String) rating.getSelectedItem()).isBlank() ? Float.parseFloat((String) rating.getSelectedItem()) : null,
                     calories.getSelectedItem() != null && !((String) calories.getSelectedItem()).isBlank() ? Integer.parseInt((String) calories.getSelectedItem()) : null,
                     protein.getSelectedItem() != null && !((String) protein.getSelectedItem()).isBlank() ? Integer.parseInt((String) protein.getSelectedItem()) : null,
@@ -91,6 +102,18 @@ public class ProductsPanel extends JPanel {
             new MessageBox("Invalid input : " + e.getMessage());
         }
         return null;
+    }
+
+    public void addSelectedItem(MenuItem item)
+    {
+        selectedItems.add(item);
+        System.out.println("Added to selection obj : " + item);
+    }
+
+    public void removeSelectedItem(MenuItem item)
+    {
+        selectedItems.remove(item);
+        System.out.println("Removed from selection obj : " + item);
     }
 
     private JPanel createInputPanel()
@@ -117,56 +140,21 @@ public class ProductsPanel extends JPanel {
         return inputPanel;
     }
 
-    private JPanel createTablePanel()
+    private void createMenuMap(HashSet<MenuItem> menu)
     {
-        JPanel tablePanel = new JPanel();
-        Dimension tablePanelDim = new Dimension(1000, 300);
-        tablePanel.setPreferredSize(tablePanelDim);
-
-        DefaultTableModel tableModel = new DefaultTableModel() {
-            public boolean isCellEditable(int row, int column)
-            {
-                return column == 7;
-            }
-        };
-        String[] headerNames = new String[] { "Title", "Rating", "Calories", "Protein", "Fat", "Sodium", "Price", "Selected" };
-        for (String s : headerNames)
-            tableModel.addColumn(s);
-
-        productsTable = new JTable();
-        productsTable.setModel(tableModel);
-        productsTable.getModel().addTableModelListener(tableModelListener = e -> {
-            if (e.getType() == TableModelEvent.UPDATE) {
-                int row = e.getFirstRow();
-                if ((boolean) productsTable.getModel().getValueAt(row, 7)) {
-                    MenuItem selectedItem = visibleItems.get(row);
-                    menu.replace(selectedItem, true);
-                    selectedItems.add(selectedItem);
-                    System.out.println("Added to selection obj : " + selectedItem);
-                } else {
-                    MenuItem unselectedItem = visibleItems.get(row);
-                    menu.replace(unselectedItem, false);
-                    selectedItems.remove(unselectedItem);
-                    System.out.println("Removed from selection obj : " + unselectedItem);
-                }
-            }
+        menuMap = new HashMap<>(menu.size());
+        menu.forEach(menuItem -> {
+            ProductPanel productPanel = new ProductPanel(menuItem, this);
+            menuMap.put(menuItem, productPanel);
         });
-
-
-        TableColumn selectedColumn = productsTable.getColumnModel().getColumn(7);
-        selectedColumn.setCellEditor(new DefaultCellEditor(new JCheckBox()));
-
-        JScrollPane scrollPane = new JScrollPane(productsTable);
-        scrollPane.setPreferredSize(tablePanelDim);
-        tablePanel.add(scrollPane);
-
-        return tablePanel;
     }
 
-    private void showNoFilterItems()
+    public void showNoFilterItems()
     {
-        visibleItems = new ArrayList<>(menu.keySet());
-        updateVisibleItems();
+        if (getComponentCount() > 1)
+            remove(1);
+        add(getVisibleItemsPanel(menuMap.keySet().parallelStream().limit(100).collect(Collectors.toList())));
+        updateUI();
     }
 
     private void filterItems(Object[] fields)
@@ -190,36 +178,22 @@ public class ProductsPanel extends JPanel {
         if (predicates.size() > 0) {
             Predicate<MenuItem> predicate = predicates.stream().reduce(p -> true, Predicate::and);
 
-            visibleItems = menu.keySet().stream().filter(predicate).collect(Collectors.toList());
-            updateVisibleItems();
+            remove(1);
+            add(getVisibleItemsPanel(menuMap.keySet().parallelStream().filter(predicate).collect(Collectors.toList())));
+            updateUI();
         }
         else {
             showNoFilterItems();
         }
     }
 
-    /**
-     * Method update the the table with visible MenuItems
-     */
-    private void updateVisibleItems()
+    private JScrollPane getVisibleItemsPanel(List<MenuItem> visibleItems)
     {
-        DefaultTableModel tableModel = (DefaultTableModel) productsTable.getModel();
+        JPanel productsPanel = new JPanel();
+        productsPanel.setLayout(new GridLayout(visibleItems.size(), 1, 0, 30));
 
-        tableModel.setRowCount(0);
+        visibleItems.parallelStream().forEach(item -> productsPanel.add(menuMap.get(item)));
 
-        visibleItems.forEach(menuItem ->
-                tableModel.addRow(new Object[] {
-                        menuItem.getTitle(),
-                        menuItem.getRating(),
-                        menuItem.getCalories(),
-                        menuItem.getProteins(),
-                        menuItem.getFat(),
-                        menuItem.getSodium(),
-                        menuItem.getPrice(),
-                        menu.get(menuItem)//check if this object is selected O(1)
-                })
-        );
-
-        productsTable.setModel(tableModel);
+        return new JScrollPane(productsPanel);
     }
 }

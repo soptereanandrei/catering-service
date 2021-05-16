@@ -40,6 +40,9 @@ public class AdministratorGUI extends JFrame {
     private JButton importButton;
     private JButton generateReportsButton;
 
+    public ProductsPanel getProductsPanelV2() {
+        return productsPanel;
+    }
     private ProductsPanel productsPanel;
 
     public AdministratorGUI(HashSet<MenuItem> menuItems)
@@ -51,7 +54,7 @@ public class AdministratorGUI extends JFrame {
 
         content.add(createButtonsPanel());
         content.add(Box.createRigidArea(new Dimension(0, 40)));
-        content.add(productsPanel = new ProductsPanel(menuItems, panelDim));
+        content.add(productsPanel = new ProductsPanel(menuItems));
 
         add(content);
         setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
@@ -84,9 +87,9 @@ public class AdministratorGUI extends JFrame {
         return buttonsPanel;
     }
 
-    public void updateMenu(HashSet<MenuItem> newMenu)
+    public void reinitializationMenu(HashSet<MenuItem> newMenu)
     {
-        productsPanel.updateMenu(newMenu);
+        productsPanel.reinitializationMenu(newMenu);
     }
 
     public Object[] getInputFields()
@@ -95,8 +98,6 @@ public class AdministratorGUI extends JFrame {
     }
 
     public List<MenuItem> getSelectedItems(){
-        System.out.println("Selected items are:");
-        productsPanel.getSelectedItems().forEach(System.out::println);
-        return null;
+        return productsPanel.getSelectedItems();
     }
 }
