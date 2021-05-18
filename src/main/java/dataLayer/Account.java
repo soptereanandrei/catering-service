@@ -9,9 +9,14 @@ import java.io.Serializable;
 public class Account implements Serializable {
     @Serial
     private static final long serialVersionUID = 6529685098267757690L;
-    private String username;
-    private String password;
-    private int privileges;
+
+    public String getUsername() {
+        return username;
+    }
+
+    private final String username;
+    private final String password;
+    private final int privileges;
 
     public Account(String username, String password, int privileges)
     {

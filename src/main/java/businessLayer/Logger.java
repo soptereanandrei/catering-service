@@ -3,6 +3,7 @@ package businessLayer;
 import dataLayer.Account;
 import dataLayer.Serializer;
 import presentation.AuthenticationGUI;
+import presentation.ClientGUI;
 import presentation.MessageBox;
 
 import javax.swing.*;
@@ -29,7 +30,7 @@ public abstract class Logger implements ActionListener {
             List<Object> accounts = serializer.loadObjects("Accounts.ser");
 
             Account loginAccount = createAccountObject(authenticationGUI.getUsername(), authenticationGUI.getPassword());
-            Account existingAccount;
+            Account existingAccount = null;
             boolean login = false;
             for (Object obj : accounts) {
                 existingAccount = (Account) obj;
@@ -44,6 +45,8 @@ public abstract class Logger implements ActionListener {
             {
                 authenticationGUI.dispose();
                 GUI.setVisible(true);
+                if (GUI instanceof ClientGUI)
+                    ((ClientGUI) GUI).setAccount(existingAccount);
             }
             else
             {

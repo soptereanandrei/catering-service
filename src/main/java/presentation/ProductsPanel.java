@@ -6,12 +6,15 @@ import javax.swing.*;
 import java.awt.*;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.TypeVariable;
 import java.util.*;
 import java.util.List;
 import java.util.function.*;
 import java.util.stream.Collectors;
 
-public class ProductsPanel extends JPanel implements PropertyChangeListener {
+public class ProductsPanel<T> extends JPanel implements PropertyChangeListener {
+    private final Class<T> productPanelType;
 
     private HashMap<MenuItem, ProductPanel> menuMap;
 
@@ -24,8 +27,6 @@ public class ProductsPanel extends JPanel implements PropertyChangeListener {
     private JComboBox<Integer> price;
     private JButton findButton;
     private JButton unselectButton;
-    //private JScrollPane allMenuBackup;
-
 
     private List<MenuItem> selectedItems = new ArrayList<>();//list of objects selected
     public List<MenuItem> getSelectedItems() {
@@ -36,11 +37,16 @@ public class ProductsPanel extends JPanel implements PropertyChangeListener {
         selectedItems.clear();
         System.out.println("Clear all selected items.");
     }
+    public int getQuantity(MenuItem item)
+    {
+        return ((ProductOrderPanel)menuMap.get(item)).getQuantity();
+    }
 
-    public ProductsPanel(HashSet<MenuItem> menu)
+    public ProductsPanel(HashSet<MenuItem> menu, Class<T> productPanelType)
     {
         super();
 
+        this.productPanelType = productPanelType;
         createMenuMap(menu);
 
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
@@ -72,7 +78,8 @@ public class ProductsPanel extends JPanel implements PropertyChangeListener {
 
         if (oldValue == null)//add new product
         {
-            menuMap.put(newValue, new ProductPanel(newValue, this));
+            //menuMap.put(newValue, new ProductPanel(newValue, this));
+            menuMap.put(newValue, createProductPanel(newValue));
         }
         else if (newValue == null)//remove product
         {
@@ -80,7 +87,8 @@ public class ProductsPanel extends JPanel implements PropertyChangeListener {
         }
         else {//replace product
             menuMap.remove(oldValue);
-            menuMap.put(newValue, new ProductPanel(newValue, this));
+            //menuMap.put(newValue, new ProductPanel(newValue, this));
+            menuMap.put(newValue, createProductPanel(newValue));
         }
     }
 
@@ -144,7 +152,8 @@ public class ProductsPanel extends JPanel implements PropertyChangeListener {
     {
         menuMap = new HashMap<>(menu.size());
         menu.forEach(menuItem -> {
-            ProductPanel productPanel = new ProductPanel(menuItem, this);
+            //ProductPanel productPanel = new ProductPanel(menuItem, this);
+            ProductPanel productPanel = createProductPanel(menuItem);
             menuMap.put(menuItem, productPanel);
         });
     }
@@ -191,9 +200,23 @@ public class ProductsPanel extends JPanel implements PropertyChangeListener {
     {
         JPanel productsPanel = new JPanel();
         productsPanel.setLayout(new GridLayout(visibleItems.size(), 1, 0, 30));
+        //productsPanel.setSize(new Dimension(1000, visibleItems.size() * (500 + 30)));
 
         visibleItems.parallelStream().forEach(item -> productsPanel.add(menuMap.get(item)));
 
         return new JScrollPane(productsPanel);
     }
+
+    private ProductPanel createProductPanel(MenuItem item)
+    {
+        try {
+            return (ProductPanel) productPanelType.getConstructors()[0].newInstance(item, this);
+        }
+        catch (Exception e)
+        {
+            System.out.println(e.getMessage());
+        }
+        return null;
+    }
+
 }

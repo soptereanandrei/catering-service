@@ -1,6 +1,8 @@
 package businessLayer;
 
+import dataLayer.BillCreator;
 import dataLayer.Serializer;
+import dataLayer.Writer;
 import presentation.MessageBox;
 
 import java.beans.PropertyChangeListener;
@@ -11,26 +13,45 @@ import java.io.Serializable;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class DeliveryService implements IDeliveryServiceProcessing, Serializable {
     @Serial
     private static final long serialVersionUID = 6529685098263257690L;
-    private transient PropertyChangeSupport support;
+    private transient PropertyChangeSupport menuPropertySupport;
+    private transient PropertyChangeSupport ordersPropertySupport;
 
     public HashSet<MenuItem> getMenu() {
         return menu;
     }
     private HashSet<MenuItem> menu;
+    private HashMap<Order, List<Pair<MenuItem, Integer>>> orders;
 
     public DeliveryService()
     {
         menu = new HashSet<>(0);
-        support = new PropertyChangeSupport(this);
+        orders = new HashMap<>();
+    }
+
+    @Override
+    public boolean isWellFormer() {
+        if (menu == null)
+            return false;
+        if (orders == null)
+            return false;
+        if (menuPropertySupport == null || ordersPropertySupport == null)
+            return false;
+
+        return true;
     }
 
     @Override
     public void importProducts() {
+        assert isWellFormer();
+
         try {
             Path path = Paths.get("products.csv");
             BufferedReader buffer = Files.newBufferedReader(path);
@@ -70,13 +91,13 @@ public class DeliveryService implements IDeliveryServiceProcessing, Serializable
 
     @Override
     public void addProduct(MenuItem item) {
-
+        assert isWellFormer();
         try {
             assert item != null;
             int preSize = menu.size();
 
             menu.add(item);
-            support.firePropertyChange("menu", null, item);
+            menuPropertySupport.firePropertyChange("menu", null, item);
             Serializer serializer = new Serializer();
             serializer.writeObject(this, "DeliveryService.ser");
 
@@ -95,8 +116,10 @@ public class DeliveryService implements IDeliveryServiceProcessing, Serializable
 
     @Override
     public void modifyProduct(List<MenuItem> selectedItems, Object[] fields) {
+        assert isWellFormer();
         assert fields != null && selectedItems != null;
         int preSize = menu.size();
+
         try {
             if (selectedItems.size() > 0)
             {
@@ -105,7 +128,7 @@ public class DeliveryService implements IDeliveryServiceProcessing, Serializable
                     MenuItem modifiedItem = selectedItem.modifyItem(fields);
                     menu.remove(selectedItem);
                     menu.add(modifiedItem);
-                    support.firePropertyChange("menu", selectedItem, modifiedItem);
+                    menuPropertySupport.firePropertyChange("menu", selectedItem, modifiedItem);
                 }
 
                 Serializer serializer = new Serializer();
@@ -124,12 +147,13 @@ public class DeliveryService implements IDeliveryServiceProcessing, Serializable
 
     @Override
     public void removeProduct(List<MenuItem> selectedItems) {
+        assert isWellFormer();
         assert selectedItems != null;
         int preSize = menu.size();
 
         for (MenuItem selectedItem : selectedItems) {
             menu.remove(selectedItem);
-            support.firePropertyChange("menu", selectedItem, null);
+            menuPropertySupport.firePropertyChange("menu", selectedItem, null);
         }
 
         Serializer serializer = new Serializer();
@@ -141,28 +165,147 @@ public class DeliveryService implements IDeliveryServiceProcessing, Serializable
     }
 
     @Override
-    public void generateReports() {
+    public void createNewOrder(String client, List<Pair<MenuItem, Integer>> choices) {
+        assert isWellFormer();
+        assert client != null;
+        assert choices != null;
+        int preSize = orders.size();
 
+        Order newOrder = new Order(orders.size(), client, choices);
+        orders.put(newOrder, choices);
+
+        String bill = BillCreator.createBill(newOrder, choices);
+        ordersPropertySupport.firePropertyChange("orders", null, bill);
+
+        Serializer serializer = new Serializer();
+        serializer.writeObject(this, "DeliveryService.ser");
+
+        assert orders.size() == preSize + 1;
+        assert orders.containsKey(newOrder);
     }
 
     @Override
-    public void createNewOrder() {
+    public void generateReportsOfOrdersInInterval(int startHour, int endHour)
+    {
+        assert isWellFormer();
+        assert endHour - startHour > 0 && endHour > 0 && startHour > 0 && endHour < 23 && startHour < 23;
+        int preSize = orders.size();
 
+        String title = "Orders ordered beetween " + startHour + " and " + endHour;
+
+        List<Order> orders = this.orders.keySet().stream().filter(order -> {
+            int hour = DateUtils.getHour(order.getOrderDate());
+            return startHour <= hour && hour <= endHour;
+        }).collect(Collectors.toList());
+
+        StringBuilder report = new StringBuilder();
+        orders.forEach(order -> {
+            report.append("Order : ").append(order.getOrderID()).append(" by ").append(order.getClientID()).append(" with price ").append(order.getPrice()).append(" in date ").append(order.getOrderDate()).append(" composited: ").append('\n');
+            List<Pair<MenuItem, Integer>> orderedItem = this.orders.get(order);
+            orderedItem.forEach(item -> {
+                List<Object[]> rows = item.key.getRepresentation();
+                Object[] row = rows.get(0);
+                report.append("Title: " + row[0] + " Rating: " + row[1] + " Calories: " + row[2] + " Proteins: " + row[3] + " Fat: " + row[4] + " Sodium: " + row[5] + " Price: " + row[6] + " Quantity: " + item.value + "\n");
+            });
+            report.append("\n");
+        });
+
+        Writer.write(report.toString(), title);
+
+        assert orders.size() == preSize;
     }
+
+    @Override
+    public void generateReportsOfProductsOrderedMoreThan(int threshold) {
+        assert isWellFormer();
+        assert threshold > 0;
+        int preSize = orders.size();
+
+        String title = "Products ordered more than " + threshold + " times";
+        HashMap<MenuItem, Integer> productsOrderedCount = this.orders.values().stream().collect(HashMap::new, CollectorsUtils.orderedCountAcumulator(), CollectorsUtils.mapSumCombiner());
+        List<MenuItem> validProducts = productsOrderedCount.keySet().stream().filter(item -> productsOrderedCount.get(item) > threshold).collect(Collectors.toList());
+
+        StringBuilder report = new StringBuilder();
+        validProducts.forEach(item -> {
+            report.append("Product ordered by ").append(productsOrderedCount.get(item)).append(" times\n");
+            Object[] row = item.getRepresentation().get(0);
+            report.append("Title: ")
+                    .append(row[0])
+                    .append(" Rating: ")
+                    .append(row[1])
+                    .append(" Calories: ")
+                    .append(row[2])
+                    .append(" Proteins: ").
+                    append(row[3])
+                    .append(" Fat: ").append(row[4]).append(" Sodium: ").append(row[5]).append(" Price: ").append(row[6]).append("\n");
+            report.append("\n");
+        });
+
+        Writer.write(report.toString(), title);
+
+        assert orders.size() == preSize;
+    }
+
+    @Override
+    public void generateReportsOfClients(int orderedThreshold, int valueThreshold) {
+        assert isWellFormer();
+        assert orderedThreshold >= 0 && valueThreshold >= 0;
+        int preSize = orders.size();
+
+        List<String> clients = orders.keySet().stream()
+                .filter(order -> order.getPrice() > valueThreshold)
+                .collect(HashMap::new, CollectorsUtils.clientOrdersCountAcumulator(), CollectorsUtils.mapSumCombiner())
+                .entrySet().stream().filter(entry -> entry.getValue() > orderedThreshold).map(Map.Entry::getKey).collect(Collectors.toList());
+
+        String title = "Clients name witch ordered more than " + orderedThreshold + " orders with a value higher than " + valueThreshold;
+        StringBuilder report = new StringBuilder();
+        clients.forEach(client -> report.append(client).append("\n"));
+        Writer.write(report.toString(), title);
+
+        assert orders.size() == preSize;
+    }
+
+    @Override
+    public void generateReportOfProductsOrderedInDay(LocalDate date) {
+        assert isWellFormer();
+        assert date != null;
+        int preSize = orders.size();
+
+        HashMap<MenuItem, Integer> items = orders.entrySet().stream().filter(entry -> DateUtils.getToLocalDate(entry.getKey().getOrderDate()).compareTo(date) == 0)
+                .map(Map.Entry::getValue).collect(HashMap::new, CollectorsUtils.orderedCountAcumulator(), CollectorsUtils.mapSumCombiner());
+
+        String title = "Products ordered in " + date.format(DateTimeFormatter.ofPattern("dd-MM-yyyy"));
+        StringBuilder report = new StringBuilder();
+        items.forEach((key, value) -> report.append(key.getTitle()).append(" ordered by ").append(value).append(" times\n"));
+        Writer.write(report.toString(), title);
+
+        assert orders.size() == preSize;
+    }
+
 
     public void createNewPropertyChangeSupport()
     {
-        support = new PropertyChangeSupport(this);
+        menuPropertySupport = new PropertyChangeSupport(this);
+        ordersPropertySupport = new PropertyChangeSupport(this);
     }
 
-    public void addPropertyChangeListener(PropertyChangeListener pcl)
+    public void addMenuPropertyChangeListener(PropertyChangeListener pcl)
     {
-        support.addPropertyChangeListener(pcl);
+        menuPropertySupport.addPropertyChangeListener(pcl);
     }
 
-    public void removePropertyChangeListener(PropertyChangeListener pcl)
+    public void removeMenuPropertyChangeListener(PropertyChangeListener pcl)
     {
-        support.removePropertyChangeListener(pcl);
+        menuPropertySupport.removePropertyChangeListener(pcl);
     }
 
+    public void addOrdersPropertyChangeListener(PropertyChangeListener pcl)
+    {
+        ordersPropertySupport.addPropertyChangeListener(pcl);
+    }
+
+    public void removeOrderPropertyChangeListener(PropertyChangeListener pcl)
+    {
+        ordersPropertySupport.removePropertyChangeListener(pcl);
+    }
 }

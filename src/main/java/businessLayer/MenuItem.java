@@ -108,10 +108,9 @@ public abstract class MenuItem implements Serializable {
 
     /**
      * Get representation as table row of the this MenuItem
-     * @param menu - reference to HashMap where the selected items are marked
      * @return An array of rows, every row is a array of objects
      */
-    public abstract List<Object[]> getRepresentation(HashMap<MenuItem, Boolean> menu);
+    //public abstract List<Object[]> getRepresentation(HashMap<MenuItem, Boolean> menu);
     public abstract List<Object[]> getRepresentation();
 
     /**

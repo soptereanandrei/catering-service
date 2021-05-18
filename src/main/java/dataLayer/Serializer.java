@@ -13,6 +13,7 @@ public class Serializer {
             ObjectOutputStream objectOutputStream = new ObjectOutputStream(fileOutputStream);
 
             objectOutputStream.writeObject(object);
+            objectOutputStream.writeObject(null);
 
             objectOutputStream.close();
             fileOutputStream.close();

@@ -9,15 +9,14 @@ import java.awt.event.ActionListener;
 import java.util.List;
 
 public class ProductPanel extends JPanel {
-
-    private static final Dimension sliceDimension = new Dimension(800, 400);
+    //private static final Dimension sliceDimension = new Dimension(1000, 500);
     private static final Dimension buttonsDim = new Dimension(100, 50);
 
-    private MenuItem menuItem;
+    private final MenuItem menuItem;
 
-    private ProductsPanel productsPanel;
-    private JButton selectButton;
-    private int slicesCount;
+    private final ProductsPanel productsPanel;
+    protected JButton selectButton;
+    protected int slicesCount;
 
     public ProductPanel(MenuItem menuItem, ProductsPanel productsPanel)
     {
@@ -28,7 +27,8 @@ public class ProductPanel extends JPanel {
 
         slicesCount = menuItem.getCompositeItemsCount();
         setLayout(new GridLayout(slicesCount, 1));
-        //setSize(sliceDimension.width, sliceDimension.height * slicesCount);
+        //Dimension dim = new Dimension(sliceDimension.width, sliceDimension.height * slicesCount);
+        //setSize(dim);
 
         List<Object[]> rows = menuItem.getRepresentation();
         add(createHeader(rows.get(0)));
@@ -48,7 +48,7 @@ public class ProductPanel extends JPanel {
         ((SelectButtonListener)selectButton.getActionListeners()[0]).forceUnselect();
     }
 
-    private JPanel createHeader(Object[] headerFields)
+    protected JPanel createHeader(Object[] headerFields)
     {
         JPanel header = new JPanel();
         header.setLayout(new BoxLayout(header, BoxLayout.X_AXIS));
@@ -60,12 +60,15 @@ public class ProductPanel extends JPanel {
             fieldsPanel.add(new JLabel("Composited:"));
         }
         header.add(fieldsPanel);
-        header.add(selectButton = GUIUtils.createButton("Select", buttonsDim));
+        JPanel buttonWrapper = new JPanel();
+        ((FlowLayout)buttonWrapper.getLayout()).setAlignment(FlowLayout.RIGHT);
+        buttonWrapper.add(selectButton = GUIUtils.createButton("Select", buttonsDim));
+        header.add(buttonWrapper);
 
         return header;
     }
 
-    private JPanel createFieldsPanel(Object[] fields)
+    protected JPanel createFieldsPanel(Object[] fields)
     {
         JPanel fieldsPanel = new JPanel();
         fieldsPanel.setLayout(new BoxLayout(fieldsPanel, BoxLayout.Y_AXIS));

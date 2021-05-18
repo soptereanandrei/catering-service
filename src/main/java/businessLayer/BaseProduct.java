@@ -21,22 +21,6 @@ public class BaseProduct extends MenuItem {
     }
 
     @Override
-    public List<Object[]> getRepresentation(HashMap<MenuItem, Boolean> menu) {
-        List<Object[]> row = new ArrayList<>(1);
-
-        row.add(new Object[] {
-                getTitle(),
-                getRating(),
-                getCalories(),
-                getProteins(),
-                getFat(),
-                getSodium(),
-                getPrice(),
-                menu.get(this)
-        });
-
-        return row;
-    }
     public List<Object[]> getRepresentation()
     {
         List<Object[]> row = new ArrayList<>(1);

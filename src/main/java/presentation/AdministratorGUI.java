@@ -40,10 +40,10 @@ public class AdministratorGUI extends JFrame {
     private JButton importButton;
     private JButton generateReportsButton;
 
-    public ProductsPanel getProductsPanelV2() {
+    public ProductsPanel<ProductPanel> getProductsPanel() {
         return productsPanel;
     }
-    private ProductsPanel productsPanel;
+    private ProductsPanel<ProductPanel> productsPanel;
 
     public AdministratorGUI(HashSet<MenuItem> menuItems)
     {
@@ -54,7 +54,7 @@ public class AdministratorGUI extends JFrame {
 
         content.add(createButtonsPanel());
         content.add(Box.createRigidArea(new Dimension(0, 40)));
-        content.add(productsPanel = new ProductsPanel(menuItems));
+        content.add(productsPanel = new ProductsPanel<>(menuItems, ProductPanel.class));
 
         add(content);
         setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);

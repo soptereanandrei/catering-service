@@ -17,20 +17,6 @@ public class CompositedProduct extends MenuItem {
     }
 
     @Override
-    public List<Object[]> getRepresentation(HashMap<MenuItem, Boolean> menu) {
-        List<Object[]> rows = new ArrayList<>(1 + compositionItems.size());
-
-        rows.add(new Object[] { getTitle(), getRating(), getCalories(), getProteins(), getFat(), getSodium(), getPrice(), menu.get(this) });
-
-        for (MenuItem compositionItem : compositionItems)
-        {
-            List<Object[]> compositionRows = compositionItem.getRepresentation(menu);
-            compositionRows.forEach(row -> row[7] = null);
-            rows.addAll(compositionRows);
-        }
-
-        return rows;
-    }
     public List<Object[]> getRepresentation()
     {
         List<Object[]> rows = new ArrayList<>(1 + compositionItems.size());
