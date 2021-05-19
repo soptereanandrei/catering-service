@@ -126,24 +126,6 @@ public abstract class MenuItem implements Serializable {
      */
     public abstract MenuItem modifyItem(Object[] fields) throws Exception;
 
-    /**
-     * Mark that this MenuItem is selected
-     * @param menu - reference to HashMap where the selected items are marked
-     */
-    public void select(HashMap<MenuItem, Boolean> menu)
-    {
-        menu.replace(this, true);
-    }
-
-    /**
-     * Mark that this MenuItem is unselected
-     * @param menu - reference to HashMap where the selected items are marked
-     */
-    public void unselect(HashMap<MenuItem, Boolean> menu)
-    {
-        menu.replace(this, false);
-    }
-
     @Override
     public int hashCode() {
         return Objects.hash(
